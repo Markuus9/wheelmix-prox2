@@ -7,9 +7,9 @@ Convierte la rueda de volumen de tus Logitech PRO X 2 LIGHTSPEED en un mezclador
 
 <p align="center"><a href="README.md">Read in English</a></p>
 
-![Ventana principal de WheelMix](docs/interface.png)
+![Ventana principal de WheelMix: balance entre Game y Chat con la rueda de los Logitech PRO X 2](docs/es/interface.png)
 
-WheelMix equilibra Discord (o cualquier app de voz) con el resto del audio usando el mezclador de Windows. Sin SteelSeries GG, sin dispositivos de audio virtuales y sin controladores.
+WheelMix es un **ChatMix gratuito y de código abierto para los auriculares Logitech PRO X 2 LIGHTSPEED**. Gira la rueda de volumen del auricular y baja el juego mientras Discord (o Teams, TeamSpeak, Zoom…) sigue alto, o al revés. Usa el mezclador de volumen normal de Windows: sin SteelSeries GG, sin dispositivos de audio virtuales, sin controladores, y G HUB puede seguir abierto.
 
 ## Descargar
 
@@ -29,6 +29,12 @@ WheelMix equilibra Discord (o cualquier app de voz) con el resto del audio usand
 - **Tus apps de chat**: Discord, Teams, TeamSpeak y Zoom vienen incluidas; puedes añadir cualquier `.exe`.
 - **Estado y batería del auricular**, pausa, dirección inversa y tamaño de paso.
 - **13 idiomas**, seleccionables en Preferencias › Idioma. [Añade el tuyo](locales/README.md).
+
+## Capturas
+
+| Preferencias | Ayuda |
+|---|---|
+| ![Preferencias de WheelMix: idioma, paso de la rueda, inicio con Windows y apps de chat](docs/es/preferences.png) | ![Ayuda integrada de WheelMix](docs/es/help.png) |
 
 ## Límites
 

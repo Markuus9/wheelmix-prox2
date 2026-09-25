@@ -1,10 +1,16 @@
 # Validation
 
 ## Automated
-- 22 checks: clamp at both ends, inversion, center, native attenuation factors, Sonar parsing, route fallback and locale-invariant writes.
-- Native Core Audio test: its own silent session only; mute, half-volume, restoration.
-- UI render smoke: main screen and settings; no audio modifications.
-- Build and publish: zero warnings/errors expected. CI runs the non-hardware checks.
+`./build.ps1` runs `WheelMix.exe --self-test` and fails the build on any error. The same checks run in GitHub Actions on every push, pull request and release tag.
+- Mixing logic: clamp at both ends, inversion, exact center, native attenuation factors.
+- Sonar parsing and HTTP contract (mocked, loopback only).
+- Headset status packets: connected with battery, off, no response, invalid battery.
+- Chat executable selection, startup command quoting, startup registration and rollback on a throwaway registry key, Windows startup toggle state.
+- Every bundled language: no missing or unknown keys, placeholders intact; regional and unknown language fallback.
+- Close-to-tray rules: X hides, Exit and Windows shutdown close.
+
+UI smoke tests (no audio changes): `--ui-smoke --ui-test-tray` (X hides, tray Open restores, tray Exit quits) and `--ui-smoke --ui-test-language` (live language switch).
+Native Core Audio test: `--test-windows` uses its own silent session only; mute, half-volume, restoration.
 
 ## Hardware
 Confirmed on the available PRO X 2 receiver: VID 046D, PID 0AF7, consumer page 000C, usage 0001. Reports observed: 02 01 (up), 02 02 (down), 02 00 (release). Release packets do not move the mix.
@@ -27,7 +33,7 @@ The included runtime was verified by publishing self-contained. A clean-machine 
 ## Developer commands
 Use the published executable with `--self-test`, `--test-windows`, `--enumerate --diagnose`, `--diagnose`, or `--probe-sonar`.
 
-For a screenshot without audio changes:
+For a screenshot without audio changes (add `--language <code>` to pick the language):
 `WheelMix.exe --ui-smoke preview.png`
 or
 `WheelMix.exe --ui-smoke --ui-settings settings.png`.

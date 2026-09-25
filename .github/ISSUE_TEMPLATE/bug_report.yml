@@ -1,4 +1,5 @@
 name: Report a problem
+labels: [bug]
 description: Something is not working as expected
 body:
   - type: textarea

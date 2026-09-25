@@ -14,9 +14,9 @@ Turn the volume wheel of your Logitech PRO X 2 LIGHTSPEED into a Game / Chat mix
 
 <p align="center"><a href="README.es.md">Leer en español</a></p>
 
-![WheelMix main window](docs/interface.png)
+![WheelMix main window: Game and Chat balance controlled by the Logitech PRO X 2 volume wheel](docs/interface.png)
 
-WheelMix balances Discord (or any voice app) against the rest of your audio using the Windows mixer. No SteelSeries GG, no virtual audio devices, no drivers.
+WheelMix is a free, open-source **ChatMix-style game/chat balance for the Logitech PRO X 2 LIGHTSPEED** wireless headset. Turn the headset's volume wheel and it lowers your game while keeping Discord (or Teams, TeamSpeak, Zoom…) loud, or the other way round. It works with the standard Windows volume mixer: no SteelSeries GG, no virtual audio devices, no drivers, and G HUB can keep running.
 
 ## Download
 
@@ -36,6 +36,29 @@ WheelMix balances Discord (or any voice app) against the rest of your audio usin
 - **Your chat apps**: Discord, Teams, TeamSpeak and Zoom are preset; add any `.exe`.
 - **Headset status and battery**, pause, reverse direction and step size.
 - **13 languages**: English, Español, Català, Deutsch, Français, Italiano, Nederlands, Polski, Português, Русский, 日本語, 한국어, 简体中文. [Add yours](locales/README.md).
+
+## Screenshots
+
+| Preferences | Help |
+|---|---|
+| ![WheelMix preferences: language, wheel step, startup with Windows and chat applications](docs/preferences.png) | ![WheelMix built-in help](docs/help.png) |
+
+## FAQ
+
+**Is this ChatMix for Logitech headsets?**
+Yes, that is the idea. SteelSeries headsets have a ChatMix dial; WheelMix gives the PRO X 2 LIGHTSPEED the same game/chat balance using the wheel it already has.
+
+**Does it need G HUB or SteelSeries GG?**
+No. G HUB can stay installed and running. SteelSeries Sonar is optional and only used if you pick it as the audio backend.
+
+**Does it create virtual audio devices?**
+No. Games and Discord keep using your normal output; WheelMix only changes each app's volume in the Windows mixer.
+
+**Other Logitech headsets (PRO X, G Pro X 2 over Bluetooth, G535…)?**
+Only the PRO X 2 LIGHTSPEED on its USB receiver is supported and tested. Captures from other models are welcome in an issue.
+
+**The wheel still changes the Windows volume.**
+The headset always sends that command. Keep *Compensate system volume* on in Preferences to undo it after each tick, or pause WheelMix to use the wheel as a normal volume knob.
 
 ## How it works
 
