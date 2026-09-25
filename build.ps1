@@ -4,9 +4,9 @@ Set-Location -LiteralPath $PSScriptRoot
 $releaseDir = Join-Path $PSScriptRoot 'release'
 $binaryDir = Join-Path $releaseDir 'WheelMix-win-x64'
 New-Item -ItemType Directory -Path $binaryDir -Force | Out-Null
-dotnet restore -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true --locked-mode
+dotnet restore ControlAudioLogitech.csproj -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true --locked-mode
 if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
-dotnet publish -c Release -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o $binaryDir
+dotnet publish ControlAudioLogitech.csproj -c Release -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o $binaryDir
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 $exe = Join-Path $binaryDir 'WheelMix.exe'
 # Refresh loose translations before testing: they override the bundled ones at runtime.
