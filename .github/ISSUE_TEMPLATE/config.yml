@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Add or fix a translation
-    url: https://github.com/Markuus9/wheelmix-prox2/blob/main/locales/README.md
+    url: https://github.com/Markuus9/wheelmix-prox2/blob/main/src/WheelMix/locales/README.md
     about: Translations are JSON files; open a pull request directly.

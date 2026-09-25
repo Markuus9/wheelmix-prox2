@@ -1,33 +1,42 @@
 param([switch]$SkipTests)
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
+$project = 'src/WheelMix/WheelMix.csproj'
 $releaseDir = Join-Path $PSScriptRoot 'release'
 $binaryDir = Join-Path $releaseDir 'WheelMix-win-x64'
-New-Item -ItemType Directory -Path $binaryDir -Force | Out-Null
-dotnet restore ControlAudioLogitech.csproj -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true --locked-mode
+$packageDir = Join-Path $releaseDir 'package'
+Remove-Item $binaryDir, $packageDir -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path $binaryDir, (Join-Path $packageDir 'licenses') -Force | Out-Null
+
+dotnet restore $project -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true --locked-mode
 if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
-dotnet publish ControlAudioLogitech.csproj -c Release -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o $binaryDir
+dotnet publish $project -c Release -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o $binaryDir
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 $exe = Join-Path $binaryDir 'WheelMix.exe'
-# Refresh loose translations before testing: they override the bundled ones at runtime.
-Remove-Item (Join-Path $binaryDir 'locales') -Recurse -Force -ErrorAction SilentlyContinue
-Copy-Item locales -Destination $binaryDir -Recurse -Force
 if (!$SkipTests) {
     $result = Start-Process -FilePath $exe -ArgumentList '--self-test' -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput (Join-Path $releaseDir 'tests.log') -RedirectStandardError (Join-Path $releaseDir 'tests-error.log')
     Get-Content (Join-Path $releaseDir 'tests.log')
     if ($result.ExitCode -ne 0) { throw 'Self-tests failed.' }
 }
-Copy-Item LICENSE,THIRD-PARTY-NAudio.txt,QUICKSTART.md -Destination $binaryDir -Force
-[xml]$project = Get-Content ControlAudioLogitech.csproj
-$runtime = $project.Project.PropertyGroup.RuntimeFrameworkVersion
+
+# ZIP layout: the executable and a quick start at the top, legal notices in licenses/.
+[xml]$xml = Get-Content $project
+$version = $xml.Project.PropertyGroup.Version
+$runtime = $xml.Project.PropertyGroup.RuntimeFrameworkVersion
 $nuget = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $env:USERPROFILE '.nuget\packages' }
-Copy-Item (Join-Path $nuget "microsoft.netcore.app.runtime.win-x64\$runtime\LICENSE.TXT") (Join-Path $binaryDir 'LICENSE-DOTNET.txt') -Force
-Copy-Item (Join-Path $nuget "microsoft.netcore.app.runtime.win-x64\$runtime\THIRD-PARTY-NOTICES.TXT") (Join-Path $binaryDir 'THIRD-PARTY-DOTNET.txt') -Force
-Copy-Item (Join-Path $nuget "microsoft.windowsdesktop.app.runtime.win-x64\$runtime\LICENSE") (Join-Path $binaryDir 'LICENSE-WINDOWSDESKTOP.txt') -Force
-$version = $project.Project.PropertyGroup.Version
+$licenses = Join-Path $packageDir 'licenses'
+Copy-Item $exe, packaging/QUICKSTART.md -Destination $packageDir
+Copy-Item LICENSE (Join-Path $licenses 'LICENSE-WheelMix.txt')
+Copy-Item packaging/THIRD-PARTY-NAudio.txt $licenses
+Copy-Item (Join-Path $nuget "microsoft.netcore.app.runtime.win-x64\$runtime\LICENSE.TXT") (Join-Path $licenses 'LICENSE-DOTNET.txt')
+Copy-Item (Join-Path $nuget "microsoft.netcore.app.runtime.win-x64\$runtime\THIRD-PARTY-NOTICES.TXT") (Join-Path $licenses 'THIRD-PARTY-DOTNET.txt')
+Copy-Item (Join-Path $nuget "microsoft.windowsdesktop.app.runtime.win-x64\$runtime\LICENSE") (Join-Path $licenses 'LICENSE-WINDOWSDESKTOP.txt')
 $zip = Join-Path $releaseDir "WheelMix-v$version-win-x64.zip"
-$items = 'locales','WheelMix.exe','LICENSE','THIRD-PARTY-NAudio.txt','QUICKSTART.md','LICENSE-DOTNET.txt','THIRD-PARTY-DOTNET.txt','LICENSE-WINDOWSDESKTOP.txt' | ForEach-Object { Join-Path $binaryDir $_ }
-Compress-Archive -LiteralPath $items -DestinationPath $zip -Force
-$hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
-[IO.File]::WriteAllText($zip + '.sha256', $hash + '  ' + [IO.Path]::GetFileName($zip) + [Environment]::NewLine)
+Compress-Archive -Path (Join-Path $packageDir '*') -DestinationPath $zip -Force
+
+# Release assets: the bare executable (direct download), the ZIP, and one checksum file for both.
+$assets = @($exe, $zip)
+$sums = $assets | ForEach-Object { (Get-FileHash -LiteralPath $_ -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($_) }
+[IO.File]::WriteAllText((Join-Path $releaseDir 'SHA256SUMS.txt'), ($sums -join "`n") + "`n")
+Write-Host "Ready: $exe"
 Write-Host "Ready: $zip"

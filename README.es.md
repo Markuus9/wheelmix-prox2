@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/wheelmix.png" width="96" alt="Logo de WheelMix"></p>
+<p align="center"><img src="src/WheelMix/assets/wheelmix.png" width="96" alt="Logo de WheelMix"></p>
 
 <h1 align="center">WheelMix</h1>
 
@@ -13,12 +13,13 @@ WheelMix es un **ChatMix gratuito y de código abierto para los auriculares Logi
 
 ## Descargar
 
-1. Entra en [**Releases**](https://github.com/Markuus9/wheelmix-prox2/releases/latest) y descarga `WheelMix-vX.Y.Z-win-x64.zip`.
-2. Extrae el ZIP en una carpeta que vayas a conservar (por ejemplo `Documentos\WheelMix`).
-3. Ejecuta **WheelMix.exe**. Es portable: incluye .NET y no instala nada.
-4. Conecta el receptor USB de los PRO X 2, abre Discord y un juego, y gira la rueda.
+1. Descarga [**WheelMix.exe**](https://github.com/Markuus9/wheelmix-prox2/releases/latest/download/WheelMix.exe) de la [última release](https://github.com/Markuus9/wheelmix-prox2/releases/latest). (Los archivos *Source code* de esa página son el código fuente y no contienen la app.)
+2. Guárdalo en una carpeta que vayas a conservar (por ejemplo `Documentos\WheelMix`) y ejecútalo. Es portable: incluye .NET y no instala nada.
+3. Conecta el receptor USB de los PRO X 2, abre Discord y un juego, y gira la rueda.
 
-> El ejecutable todavía no está firmado, así que Windows SmartScreen puede avisar la primera vez. Pulsa **Más información › Ejecutar de todas formas**. Puedes comprobar la descarga con el archivo `.sha256` de cada release.
+Cada release incluye también un ZIP con el mismo ejecutable, una guía rápida y las licencias.
+
+> El ejecutable todavía no está firmado, así que Windows SmartScreen puede avisar la primera vez. Pulsa **Más información › Ejecutar de todas formas**. Puedes comprobar la descarga con `SHA256SUMS.txt` de cada release.
 
 ## Qué puedes hacer
 
@@ -28,7 +29,7 @@ WheelMix es un **ChatMix gratuito y de código abierto para los auriculares Logi
 - **Inicio con Windows** si lo activas en Preferencias. Aparece como *WheelMix* en Configuración › Aplicaciones › Inicio.
 - **Tus apps de chat**: Discord, Teams, TeamSpeak y Zoom vienen incluidas; puedes añadir cualquier `.exe`.
 - **Estado y batería del auricular**, pausa, dirección inversa y tamaño de paso.
-- **13 idiomas**, seleccionables en Preferencias › Idioma. [Añade el tuyo](locales/README.md).
+- **13 idiomas**, seleccionables en Preferencias › Idioma. [Añade el tuyo](src/WheelMix/locales/README.md).
 
 ## Capturas
 

@@ -1,7 +1,12 @@
 # Changelog
 
+## 0.3.1
+- Releases now offer `WheelMix.exe` as a direct download, next to a tidier ZIP (executable and quick start at the top, licenses in `licenses/`) and a single `SHA256SUMS.txt`.
+- Source reorganized under `src/WheelMix/` (Audio, Headset, UI, SelfTests, locales); the version shown in the window now comes from the project file.
+
+
 ## 0.3.0
-- Interface in 13 languages, switchable from Preferences › Language (Automatic follows Windows). Translations are plain JSON files in `locales/`; see `locales/README.md` to add one.
+- Interface in 13 languages, switchable from Preferences â€º Language (Automatic follows Windows). Translations are plain JSON files in `locales/`; see `locales/README.md` to add one.
 - Closing the window keeps WheelMix running in the notification area; Exit from the tray icon closes it. A single click on the icon reopens the window.
 - Startup entry is now registered as "WheelMix" (legacy name migrated) and Preferences reports when Windows has it switched off in Startup apps; enabling it in WheelMix switches it back on.
 - Fixed stale drawing of the balance and cards when resizing or maximizing the window.

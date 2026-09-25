@@ -84,7 +84,7 @@ sealed class MainWindow : Form {
         var helpButton=Theme.ButtonKey("main.help",ShowHelp);helpButton.Name="helpButton";controls.Controls.Add(helpButton);quick.Controls.Add(controls,1,0);root.Controls.Add(quick,0,3);
         var bottom=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=new Padding(0) };
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
-        bottom.Controls.Add(Theme.Label("PRO X 2 LIGHTSPEED  /  Windows  /  v0.3.0",9,Theme.Muted),0,0);
+        bottom.Controls.Add(Theme.Label("PRO X 2 LIGHTSPEED  /  Windows  /  v"+typeof(MainWindow).Assembly.GetName().Version!.ToString(3),9,Theme.Muted),0,0);
         var logs=new LinkLabel { Text=L.Text("main.diagnostics"),AutoSize=true,LinkColor=Theme.Muted,ActiveLinkColor=Theme.Accent,Anchor=AnchorStyles.Top|AnchorStyles.Right };
         L.Bind(logs,"main.diagnostics");logs.LinkClicked+=(_,_)=>ShowDiagnostics();bottom.Controls.Add(logs,1,0);root.Controls.Add(bottom,0,4);
         Controls.Add(root);

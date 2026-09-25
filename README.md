@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/wheelmix.png" width="96" alt="WheelMix logo"></p>
+<p align="center"><img src="src/WheelMix/assets/wheelmix.png" width="96" alt="WheelMix logo"></p>
 
 <h1 align="center">WheelMix</h1>
 
@@ -20,12 +20,13 @@ WheelMix is a free, open-source **ChatMix-style game/chat balance for the Logite
 
 ## Download
 
-1. Go to [**Releases**](https://github.com/Markuus9/wheelmix-prox2/releases/latest) and download `WheelMix-vX.Y.Z-win-x64.zip`.
-2. Extract the ZIP to a folder you will keep (for example `Documents\WheelMix`).
-3. Run **WheelMix.exe**. It is portable: .NET is included and nothing is installed.
-4. Plug in the PRO X 2 USB receiver, open Discord and a game, and turn the wheel.
+1. Download [**WheelMix.exe**](https://github.com/Markuus9/wheelmix-prox2/releases/latest/download/WheelMix.exe) from the [latest release](https://github.com/Markuus9/wheelmix-prox2/releases/latest). (The *Source code* archives on that page are for developers and do not contain the app.)
+2. Put it in a folder you will keep (for example `Documents\WheelMix`) and run it. It is portable: .NET is included and nothing is installed.
+3. Plug in the PRO X 2 USB receiver, open Discord and a game, and turn the wheel.
 
-> The executable is not code-signed yet, so Windows SmartScreen may warn the first time. Choose **More info › Run anyway**. You can check the download against the `.sha256` file published with each release.
+A ZIP with the same executable, a quick start guide and the licenses is also attached to each release.
+
+> The executable is not code-signed yet, so Windows SmartScreen may warn the first time. Choose **More info › Run anyway**. You can check the download against `SHA256SUMS.txt` in each release.
 
 ## Features
 
@@ -35,7 +36,7 @@ WheelMix is a free, open-source **ChatMix-style game/chat balance for the Logite
 - **Starts with Windows** if you enable it in Preferences. It appears as *WheelMix* in Settings › Apps › Startup.
 - **Your chat apps**: Discord, Teams, TeamSpeak and Zoom are preset; add any `.exe`.
 - **Headset status and battery**, pause, reverse direction and step size.
-- **13 languages**: English, Español, Català, Deutsch, Français, Italiano, Nederlands, Polski, Português, Русский, 日本語, 한국어, 简体中文. [Add yours](locales/README.md).
+- **13 languages**: English, Español, Català, Deutsch, Français, Italiano, Nederlands, Polski, Português, Русский, 日本語, 한국어, 简体中文. [Add yours](src/WheelMix/locales/README.md).
 
 ## Screenshots
 
@@ -95,11 +96,26 @@ Requires Windows x64 and the .NET 8 SDK (see `global.json`).
 ./build.ps1
 ```
 
-It restores with the lock file, publishes a self-contained single-file `WheelMix.exe`, runs the self-tests and writes `release/WheelMix-vX.Y.Z-win-x64.zip` plus its `.sha256`. See [Testing](docs/TESTING.md) and [Releasing](docs/RELEASING.md).
+It restores with the lock file, publishes a self-contained single-file `WheelMix.exe`, runs the self-tests and writes `release/WheelMix-win-x64/WheelMix.exe`, `release/WheelMix-vX.Y.Z-win-x64.zip` and `release/SHA256SUMS.txt`. See [Testing](docs/TESTING.md) and [Releasing](docs/RELEASING.md).
+
+## Project layout
+
+```
+src/WheelMix/          the app (.NET 8, WinForms)
+  Audio/               Windows mixer, Sonar backend, system-volume compensation
+  Headset/             PRO X 2 receiver input and headset status
+  UI/                  main window, preferences, help, theme
+  SelfTests/           checks run by --self-test and the build
+  locales/             translations (JSON)
+  assets/              icon and logo
+packaging/             files shipped inside the release ZIP
+docs/                  screenshots, testing and release notes
+build.ps1              build, test and package
+```
 
 ## Contributing
 
-Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md). Translations are plain JSON files; see [locales/README.md](locales/README.md).
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md). Translations are plain JSON files; see [locales/README.md](src/WheelMix/locales/README.md).
 
 ## License
 

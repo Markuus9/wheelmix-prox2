@@ -19,7 +19,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         run: |
-          [xml]$project = Get-Content ControlAudioLogitech.csproj
+          [xml]$project = Get-Content src/WheelMix/WheelMix.csproj
           $version = $project.Project.PropertyGroup.Version
           if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "Tag $env:GITHUB_REF_NAME does not match project version $version." }
       - name: Build, test and package
@@ -30,8 +30,9 @@ jobs:
         with:
           name: WheelMix-win-x64
           path: |
+            release/WheelMix-win-x64/WheelMix.exe
             release/*.zip
-            release/*.sha256
+            release/SHA256SUMS.txt
           if-no-files-found: error
 
   # Publishes the tested package from the job above; only tags get write access.
@@ -52,8 +53,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          # Release notes are the matching CHANGELOG section.
-          awk -v heading="## $version" '$0==heading{found=1;next} /^## /{if(found)exit} found' CHANGELOG.md > notes.md
-          test -s notes.md || { echo "CHANGELOG.md has no section for $version"; exit 1; }
-          printf '\n**Download** `WheelMix-%s-win-x64.zip`, extract it and run `WheelMix.exe`. No installation or .NET needed. Verify with the `.sha256` file.\n' "$GITHUB_REF_NAME" >> notes.md
-          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.sha256 --title "WheelMix $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME"
+          {
+            echo "## Download"
+            echo
+            echo "**[⬇ WheelMix.exe]($base/WheelMix.exe)**: download and run. Portable, nothing to install, .NET included."
+            echo
+            echo "Prefer a folder with the quick start guide and licenses? Get [WheelMix-$GITHUB_REF_NAME-win-x64.zip]($base/WheelMix-$GITHUB_REF_NAME-win-x64.zip)."
+            echo "*Source code* archives below are for developers and do not contain the app."
+            echo
+            echo "Windows 10/11 x64 · Logitech PRO X 2 LIGHTSPEED with its USB receiver. Unsigned: if SmartScreen warns, choose **More info › Run anyway**. Checksums: \`SHA256SUMS.txt\`."
+            echo
+            echo "## What's new"
+            echo
+            # The matching CHANGELOG section.
+            awk -v heading="## $version" '$0==heading{found=1;next} /^## /{if(found)exit} found' CHANGELOG.md
+          } > notes.md
+          grep -q '^- ' notes.md || { echo "CHANGELOG.md has no section for $version"; exit 1; }
+          gh release create "$GITHUB_REF_NAME" dist/WheelMix-win-x64/WheelMix.exe dist/*.zip dist/SHA256SUMS.txt --title "WheelMix $GITHUB_REF_NAME" --notes-file notes.md --verify-tag
