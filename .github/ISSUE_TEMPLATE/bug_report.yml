@@ -1,0 +1,26 @@
+name: Report a problem
+description: Something is not working as expected
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include the steps to reproduce and the expected result.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: WheelMix and Windows versions
+    validations:
+      required: true
+  - type: input
+    id: headset
+    attributes:
+      label: Headset and connection
+      placeholder: PRO X 2 LIGHTSPEED, USB receiver
+  - type: textarea
+    id: details
+    attributes:
+      label: Additional details
+      description: Does the app detect the headset? Does the balance move? Is volume compensation on? Redact personal information before sharing logs.
