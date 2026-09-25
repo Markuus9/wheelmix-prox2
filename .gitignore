@@ -1,7 +1,5 @@
 bin/
 obj/
-app/
-app-autonoma/
 release/
 work/
 *.zip
