@@ -9,6 +9,7 @@ sealed class RawInput : NativeWindow, IDisposable
     readonly Action<int> wheel;
     readonly Action otherVolume;
     readonly Dictionary<nint, Device> devices = new();
+    public string? StatusDevicePath { get; private set; }
     public int TargetCount => devices.Values.Count(d => d.Target);
     sealed record Device(string Path, bool Target, byte[] Descriptor);
     public RawInput(Action<string> log, Action<int> wheel, Action otherVolume) {
@@ -24,7 +25,7 @@ sealed class RawInput : NativeWindow, IDisposable
         var list = new Entry[count];
         uint read = GetRawInputDeviceList(list, ref count, size);
         if (read == uint.MaxValue) return;
-        devices.Clear();
+        devices.Clear(); StatusDevicePath=null;
         for (int i = 0; i < read; i++) if (list[i].Type == 2) {
             try { GetDevice(list[i].Handle); } catch (Exception e) { log("Dispositivo omitido: " + e.Message); }
         }
@@ -55,6 +56,7 @@ sealed class RawInput : NativeWindow, IDisposable
             if (GetRawInputDeviceInfo(h, Preparsed, mem, ref n) == uint.MaxValue) throw new System.ComponentModel.Win32Exception();
             Marshal.Copy(mem, desc, 0, (int)n);
         } finally { Marshal.FreeHGlobal(mem); }
+        if(vid==0x046d && pid==0x0af7 && page==0xffa0 && usage==1) StatusDevicePath=path;
         bool target = vid == 0x046d && pid == 0x0af7 && page == 0x0c && usage == 1;
         found = new Device(path, target, desc); devices[h] = found;
         log($"HID VID={vid:X4} PID={pid:X4} page={page:X4} usage={usage:X4} target={target} {path}");

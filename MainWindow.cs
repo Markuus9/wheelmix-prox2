@@ -18,7 +18,12 @@ sealed class MainWindow : Form {
     readonly Label note=Theme.Label("",9,Theme.Muted);
     readonly MixSurface surface=new();
     readonly Button pause;
-    bool busy,connected,paused,closing,readyToClose;
+    bool busy,connected,paused,closing,readyToClose,editing,statusBusy;
+    long nextStatus;
+    HeadsetReading headset=new(HeadsetLink.Unknown);
+    readonly CancellationTokenSource statusCancellation=new();
+    HelpDialog? helpWindow;
+    Label? compensationStatus;
     int pending;
     double current;
     double? requested;
@@ -74,10 +79,10 @@ sealed class MainWindow : Form {
         var controls=Theme.Row(); controls.Anchor=AnchorStyles.Top|AnchorStyles.Right; controls.Dock=DockStyle.None;
         pause=Theme.Button("Pausar",()=> { if(busy)return; paused=!paused;pause!.Text=paused?"Reanudar":"Pausar";if(paused){pending=0;requested=0;} guard.Enabled=!paused&&config.Compensate;UpdatePresentation(); });
         pause.Enabled=!diagnostic; controls.Controls.Add(pause);
-        controls.Controls.Add(Theme.Button("Ayuda",ShowHelp));quick.Controls.Add(controls,1,0);root.Controls.Add(quick,0,3);
+        var helpButton=Theme.Button("Ayuda",ShowHelp);helpButton.Name="helpButton";controls.Controls.Add(helpButton);quick.Controls.Add(controls,1,0);root.Controls.Add(quick,0,3);
         var bottom=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=new Padding(0) };
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
-        bottom.Controls.Add(Theme.Label("PRO X 2 LIGHTSPEED  /  Windows  /  v0.2.0",9,Theme.Muted),0,0);
+        bottom.Controls.Add(Theme.Label("PRO X 2 LIGHTSPEED  /  Windows  /  v0.2.1",9,Theme.Muted),0,0);
         var logs=new LinkLabel { Text="Diagnóstico",AutoSize=true,LinkColor=Theme.Muted,ActiveLinkColor=Theme.Accent,Anchor=AnchorStyles.Top|AnchorStyles.Right };
         logs.LinkClicked+=(_,_)=>ShowDiagnostics();bottom.Controls.Add(logs,1,0);root.Controls.Add(bottom,0,4);
         Controls.Add(root);
@@ -87,7 +92,7 @@ sealed class MainWindow : Form {
         menu.Items.Add("Salir",null,(_,_)=>Close());tray.ContextMenuStrip=menu;tray.DoubleClick+=(_,_)=>Restore();
         Resize+=(_,_)=> {if(WindowState==FormWindowState.Minimized)Hide();};
         Load+=(_,_)=> {
-            if(preview) { connected=true; device.Text="●  PRO X 2 conectado";device.ForeColor=Theme.Mint;gameApps.Text="Spotify  ·  Chrome";chatApps.Text="Discord";UpdatePresentation();return; }
+            if(preview) { connected=true; device.Text="●  Auricular activo · 44%";device.ForeColor=Theme.Mint;gameApps.Text="Spotify  ·  Chrome";chatApps.Text="Discord";UpdatePresentation();return; }
             try {raw=new RawInput(Log,OnWheel,guard.Cancel);}
             catch(Exception e) {Log("HID: "+e.Message);}
             guard.Enabled=!diagnostic&&config.Compensate; Log(diagnostic?"Modo diagnóstico: solo lectura.":"WheelMix iniciado · "+config.Backend);
@@ -96,15 +101,16 @@ sealed class MainWindow : Form {
         timer.Tick+=async(_,_)=> {
             if(closing)return;
             guard.Tick();
-            if(!diagnostic&&!busy&&(pending!=0||requested.HasValue||Environment.TickCount64>=nextPoll))await Pump();
+            if(!diagnostic&&!statusBusy&&Environment.TickCount64>=nextStatus)_=RefreshHeadset();
+            if(!diagnostic&&!editing&&!busy&&(pending!=0||requested.HasValue||Environment.TickCount64>=nextPoll))await Pump();
             UpdatePresentation();
         };
         FormClosing+=async(_,e)=> {
             if(readyToClose)return;
-            closing=true;timer.Stop();
+            closing=true;timer.Stop();statusCancellation.Cancel();
             if(busy) {e.Cancel=true;while(busy)await Task.Delay(25);readyToClose=true;Close();}
         };
-        FormClosed+=(_,_)=> {timer.Dispose();raw?.Dispose();guard.Dispose();mixer?.Dispose();tray.Dispose();diagnosticWindow?.Close();logfile.Dispose();};
+        FormClosed+=(_,_)=> {timer.Dispose();raw?.Dispose();guard.Dispose();mixer?.Dispose();tray.Dispose();diagnosticWindow?.Close();helpWindow?.Close();logfile.Dispose();statusCancellation.Dispose();};
         UpdatePresentation();
     }
     CardPanel Group(string title,string subtitle,Label apps,Color color) {
@@ -117,10 +123,13 @@ sealed class MainWindow : Form {
     IMixer CreateMixer()=>config.Backend=="Sonar"?new Sonar():new WindowsMixer(config.ChatApps,Log);
     void UpdatePresentation() {
         surface.Value=current;
-        if(!preview) {bool found=(raw?.TargetCount??0)>0; device.Text=found?"●  PRO X 2 conectado":"○  Conecta el receptor USB";device.ForeColor=found?Theme.Mint:Theme.Muted;}
+        if(compensationStatus is {IsDisposed:false})compensationStatus.Text=guard.Description;
+        if(!preview) {bool found=(raw?.TargetCount??0)>0;
+            device.Text=!found?"○  Receptor desconectado":headset.Link==HeadsetLink.Connected?$"●  Auricular activo{(headset.Battery.HasValue?$" · {headset.Battery}%":"")}":headset.Link==HeadsetLink.Disconnected?"○  Auricular apagado":"○  Receptor presente · sin confirmar";
+            device.ForeColor=found&&headset.Link==HeadsetLink.Connected?Theme.Mint:Theme.Muted;}
         if(diagnostic)state.Text="Solo diagnóstico · no modifica el audio";
         else if(paused)state.Text="En pausa · rueda de volumen normal";
-        else if(connected)state.Text="Listo para mezclar · "+(config.Backend=="Windows"?"sin SteelSeries":"Sonar");
+        else if(connected)state.Text="Listo para mezclar";
         else state.Text=config.Backend=="Sonar"?"Abre GG y activa Sonar":"Preparando el audio de Windows…";
         note.Text="Centro conserva el volumen original. "+(guard.IsOperational||preview?"Volumen general: compensación activa.":guard.Enabled?"Compensación en espera de una salida de audio.":"Volumen general: control normal de Windows.");
         if(mixer is WindowsMixer native) {
@@ -129,7 +138,7 @@ sealed class MainWindow : Form {
         } else if(config.Backend=="Sonar") {chatApps.Text="Canal Sonar Chat";gameApps.Text="Canal Sonar Gaming";}
     }
     void OnWheel(int direction) {
-        if(closing||paused||diagnostic)return;
+        if(closing||paused||diagnostic||editing)return;
         if(!connected)return;
         guard.Wheel();pending=Math.Clamp(pending+(config.Reverse?-direction:direction),-100,100);
     }
@@ -149,21 +158,40 @@ sealed class MainWindow : Form {
         finally {busy=false;}
         if(!closing)UpdatePresentation();
     }
+    async Task RefreshHeadset() {
+        statusBusy=true;string? path=raw?.StatusDevicePath;
+        try {
+            var value=path==null?new HeadsetReading(HeadsetLink.Unknown):await HeadsetStatus.Query(path,statusCancellation.Token);
+            if(closing||IsDisposed)return;
+            if(path==raw?.StatusDevicePath) {
+                if(value!=headset)Log($"Auricular: {value.Link} · batería {value.Battery} · {value.Detail}");
+                headset=value;
+            } else headset=new(HeadsetLink.Unknown);
+            nextStatus=Environment.TickCount64+2000;UpdatePresentation();
+        } finally {statusBusy=false;}
+    }
     void OpenSettings() {
         if(busy||diagnostic)return;
-        var running=mixer is WindowsMixer native?native.ChatNames.Concat(native.GameNames):Array.Empty<string>();
-        using var dialog=new SettingsDialog(config,running);
-        if(dialog.ShowDialog(this)!=DialogResult.OK||dialog.Value==null)return;
+        editing=true;guard.Cancel();guard.Enabled=false;
         try {
-            var updated=dialog.Value;updated.Save();mixer?.Dispose();config=updated;mixer=preview?null:CreateMixer();
-            pending=0;requested=null;current=0;nextPoll=0;connected=false;surface.Step=config.Step;guard.Cancel();guard.Enabled=!preview&&!paused&&config.Compensate;
-            UpdatePresentation();
+            var running=mixer is WindowsMixer native?native.ChatNames.Concat(native.GameNames):Array.Empty<string>();
+            using var dialog=new SettingsDialog(config,running);
+            if(dialog.ShowDialog(this)!=DialogResult.OK||dialog.Value==null)return;
+            var updated=dialog.Value;Preferences.Save(updated,dialog.RequestedStartup);
+            mixer?.Dispose();config=updated;mixer=preview?null:CreateMixer();
+            pending=0;requested=null;current=0;nextPoll=0;connected=false;surface.Step=config.Step;
+            Log("Preferencias guardadas. "+Startup.Status);UpdatePresentation();
         }catch(Exception e){MessageBox.Show(this,e.Message,"No se pudieron guardar los ajustes");}
+        finally{editing=false;guard.Enabled=!preview&&!paused&&config.Compensate;}
     }
     void ShowHelp() {
-        MessageBox.Show(this,
-            "1. Conecta el receptor USB de tus PRO X 2.\n2. Abre Discord y un juego o música.\n3. Gira la rueda: subir favorece Chat; bajar favorece Game.\n\nEn Preferencias puedes invertir el sentido y elegir tus apps de voz. No se crean salidas virtuales. Las apps conservan su salida habitual.\n\nMantener el volumen general compensa los cambios tras el giro: puede haber un salto breve y puede afectar a otro cambio simultáneo. Desactívalo si notas interferencias.\n\nMinimizar mantiene WheelMix en la bandeja. Cerrar restaura los volúmenes y termina la aplicación.",
-            "Usar WheelMix",MessageBoxButtons.OK,MessageBoxIcon.Information);
+        if(helpWindow==null||helpWindow.IsDisposed){helpWindow=new HelpDialog();helpWindow.Show(this);}
+        if(helpWindow.WindowState==FormWindowState.Minimized)helpWindow.WindowState=FormWindowState.Normal;
+        helpWindow.BringToFront();helpWindow.Activate();Log("Ayuda abierta.");
+    }
+    internal Form OpenHelpForTest() {
+        var button=Controls.Find("helpButton",true).OfType<Button>().Single();button.PerformClick();
+        return helpWindow??throw new InvalidOperationException("El botón Ayuda no abrió la ventana.");
     }
     void ShowDiagnostics() {
         if(diagnosticWindow is {IsDisposed:false}) {diagnosticWindow.Activate();return;}
@@ -172,7 +200,8 @@ sealed class MainWindow : Form {
         var footer=new FlowLayoutPanel {Dock=DockStyle.Bottom,Height=56,Padding=new Padding(10)};
         footer.Controls.Add(Theme.Button("Abrir registros",()=>Process.Start(new ProcessStartInfo(Program.DataDir){UseShellExecute=true})));
         footer.Controls.Add(Theme.Button("Detectar de nuevo",()=> {raw?.Enumerate();nextPoll=0;}));
-        diagnosticWindow.Controls.Add(diagnosticText);diagnosticWindow.Controls.Add(footer);diagnosticWindow.Show(this);
+        compensationStatus=Theme.Label(guard.Description,10,Theme.Muted);compensationStatus.Dock=DockStyle.Top;compensationStatus.AutoSize=false;compensationStatus.Height=48;
+        diagnosticWindow.Controls.Add(diagnosticText);diagnosticWindow.Controls.Add(compensationStatus);diagnosticWindow.Controls.Add(footer);diagnosticWindow.Show(this);
     }
     void Log(string message) {
         if(IsDisposed)return;

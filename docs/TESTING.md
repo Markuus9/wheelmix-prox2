@@ -1,7 +1,7 @@
 # Validation
 
 ## Automated
-- 15 checks: clamp at both ends, inversion, center, native attenuation factors, Sonar parsing, route fallback and locale-invariant writes.
+- 22 checks: clamp at both ends, inversion, center, native attenuation factors, Sonar parsing, route fallback and locale-invariant writes.
 - Native Core Audio test: its own silent session only; mute, half-volume, restoration.
 - UI render smoke: main screen and settings; no audio modifications.
 - Build and publish: zero warnings/errors expected. CI runs the non-hardware checks.
@@ -31,3 +31,12 @@ For a screenshot without audio changes:
 `WheelMix.exe --ui-smoke preview.png`
 or
 `WheelMix.exe --ui-smoke --ui-settings settings.png`.
+
+## 0.2.1 status and preferences checks
+- Direct headset query returned Connected and battery 44% on the local receiver.
+- OFF and unknown packet handling are covered by fixtures; a physical power-cycle check is still needed.
+- Help-button PerformClick opened the owned Help window; screenshot verified.
+- Executable selection checks process-name extraction, non-exe rejection and duplicate handling.
+- Startup command quoting is tested without modifying startup registration. Actual next-login launch still requires a user login test.
+- Preferences: changes apply only on Save; Cancel does not touch registration. Saving checks the current-user Run value by reading it back. Windows Startup Apps can independently disable it.
+- Volume compensation was disabled in the existing local settings; this preference is preserved. No perfect suppression is claimed.

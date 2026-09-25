@@ -21,6 +21,15 @@ static class Tests {
             Check(WindowsMixer.Factor(true, -1) == 0 && WindowsMixer.Factor(false, -1) == 1, "extremo Game");
             Check(WindowsMixer.Factor(true, 0) == 1 && WindowsMixer.Factor(false, 0) == 1, "centro sin atenuación");
             SonarContractTest.Run(Check);
+            var battery=new byte[64];battery[0]=0x51;battery[1]=0x0b;battery[8]=4;battery[10]=44;
+            Check(HeadsetStatus.Parse(battery)==new HeadsetReading(HeadsetLink.Connected,44),"respuesta de auricular encendido");
+            Check(HeadsetStatus.Parse(new byte[]{0x51,5,0,0xff,3,0x1a,0x0b,0}).Link==HeadsetLink.Disconnected,"firma de auricular apagado");
+            Check(HeadsetStatus.Parse(Array.Empty<byte>()).Link==HeadsetLink.Unknown,"sin respuesta no equivale a apagado");
+            battery[10]=101;Check(HeadsetStatus.Parse(battery).Link==HeadsetLink.Unknown,"rechazar batería inválida");
+            Check(ChatApplications.FromExecutable(@"C:\Program Files\Discord\Discord.EXE")=="Discord","seleccionar exe obtiene proceso");
+            rejected=false;try{ChatApplications.FromExecutable("setup.msi");}catch(ArgumentException){rejected=true;}
+            Check(rejected,"rechazar archivos no ejecutables");
+            Check(Startup.BuildCommand(@"C:\My Apps\WheelMix.exe")=="\"C:\\My Apps\\WheelMix.exe\" --tray","inicio automático entrecomilla rutas con espacios");
             Console.WriteLine($"{count} pruebas correctas."); return 0;
         } catch (Exception e) { Console.WriteLine(e); return 1; }
     }

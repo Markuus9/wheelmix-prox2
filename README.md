@@ -10,7 +10,7 @@ Convierte la rueda de tus Logitech PRO X 2 LIGHTSPEED en un control de balance e
 
 ## Descargar y usar
 
-1. En la sección **Releases** del repositorio, descarga `WheelMix-v0.2.0-win-x64.zip` cuando esté publicado.
+1. En la sección **Releases** del repositorio, descarga `WheelMix-v0.2.1-win-x64.zip` cuando esté publicado.
 2. Extrae el ZIP y ejecuta **WheelMix.exe**.
 3. Conecta el receptor USB de los PRO X 2 y abre Discord y tu juego.
 4. Gira la rueda para dar prioridad al chat o al juego.
@@ -49,7 +49,7 @@ Los porcentajes son relativos al volumen original de cada aplicación. Si Spotif
 - Bluetooth, conexión analógica y otros auriculares no se han validado.
 - El control por aplicación necesita audio compartido de Windows; el modo exclusivo no está cubierto.
 - Las pestañas de navegador que comparten proceso no pueden separarse por contenido. Es preferible Discord de escritorio.
-- La compensación **Mantener el volumen general** está activa por defecto en instalaciones nuevas. Restaura el volumen después del giro; puede haber un salto breve, aparecer el indicador de Windows o interferir con cambios simultáneos. Es una compensación de mejor esfuerzo, no un bloqueo HID. Se puede desactivar.
+- La compensación **Compensar el volumen general al girar** está activa por defecto en instalaciones nuevas. Restaura el volumen después del giro; puede haber un salto breve, aparecer el indicador de Windows o interferir con cambios simultáneos. Es una compensación de mejor esfuerzo, no un bloqueo HID. Se puede desactivar.
 - Al cerrar normalmente se restauran los niveles de las sesiones. Un cierre forzado puede dejar niveles atenuados: recupéralos en el mezclador de Windows.
 - La versión no está firmada digitalmente. No se garantiza que Windows SmartScreen la reconozca.
 - La integración opcional de Sonar sigue disponible en Preferencias. Usa una API comunitaria no oficial; no se validó contra un servicio Sonar operativo en este equipo.
@@ -67,14 +67,14 @@ Necesitas Windows x64 y un SDK .NET 8 compatible con `global.json`. El proyecto 
 El script restaura con el archivo de bloqueo, publica el ejecutable autónomo, ejecuta las pruebas de lógica y API simulada y genera:
 
 - `release/WheelMix-win-x64/WheelMix.exe`
-- `release/WheelMix-v0.2.0-win-x64.zip`
+- `release/WheelMix-v0.2.1-win-x64.zip`
 - Su archivo `.sha256`.
 
 No distribuyas `bin/`, logs ni el ZIP antiguo del prototipo. El paquete para usuarios es el ZIP generado dentro de `release/`.
 
 ## Pruebas
 
-El build ejecuta las 15 comprobaciones de lógica y contratos HTTP. También hay una prueba local de audio real:
+El build ejecuta las 22 comprobaciones de lógica y contratos HTTP. También hay una prueba local de audio real:
 
 ```powershell
 Start-Process ./release/WheelMix-win-x64/WheelMix.exe -ArgumentList '--test-windows' -Wait
@@ -103,3 +103,13 @@ Código bajo licencia [MIT](LICENSE). NAudio y los componentes .NET conservan su
 WheelMix turns the Logitech PRO X 2 LIGHTSPEED headset wheel into a game/voice balance control using Windows audio sessions. Download the portable Windows x64 ZIP, extract it, and run WheelMix.exe. It bundles .NET and does not require SteelSeries or virtual audio drivers.
 
 The interface is currently Spanish. See [Quick start](QUICKSTART.md) for the English control guide. System-volume compensation is best effort, not a guaranteed input block. This release is unsigned.
+
+## Estado del auricular y preferencias (0.2.1)
+
+El receptor conectado no prueba que el auricular esté encendido. WheelMix consulta el canal de estado Centurion aproximadamente cada dos segundos: activo y batería, apagado o estado sin confirmar. No interpreta un timeout como apagado. Referencia del protocolo: [PROX2-AutoSwitch](https://github.com/Ayerdi/PROX2-AutoSwitch/blob/main/lib/LogitechProX2Centurion.psm1).
+
+En Aplicaciones de chat, marcada significa Chat y desmarcada Game. **Elegir archivo .exe** añade el nombre del proceso sin ejecutar el archivo. Se compara el nombre, no la ruta, para tolerar cambios de carpeta tras actualizaciones. Dos ejecutables con el mismo nombre se agrupan; no selecciones instaladores ni Update.exe.
+
+Inicio con Windows se guarda en HKCU/Software/Microsoft/Windows/CurrentVersion/Run/ControlAudioLogitech como la ruta entre comillas seguida de --tray. Solo se modifica al guardar: activar registra la copia actual; desactivar elimina la entrada. Cancelar no cambia nada. Preferencias muestra su registro y enlaza a Aplicaciones de inicio de Windows para comprobar si el sistema lo ha deshabilitado.
+
+Diagnóstico muestra si la compensación está activa y cuántas correcciones ha hecho en esta sesión. Tenerla activa sin correcciones no prueba un fallo: puede que el volumen general no haya cambiado. La compensación sigue siendo de mejor esfuerzo.

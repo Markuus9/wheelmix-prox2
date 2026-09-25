@@ -23,4 +23,4 @@ Extract the ZIP and run **WheelMix.exe**. No .NET installation or SteelSeries so
 
 **Preferencias** opens settings; **Restablecer centro** resets the balance; **Pausar** pauses wheel mixing and centers it. Minimizing keeps the app in the tray; closing exits and restores session levels.
 
-System-volume compensation is best effort, not a device-specific input block. It may cause brief level changes or affect simultaneous adjustments. Disable **Mantener el volumen general** if needed.
+System-volume compensation is best effort, not a device-specific input block. It may cause brief level changes or affect simultaneous adjustments. Disable **Compensar el volumen general al girar** if needed.

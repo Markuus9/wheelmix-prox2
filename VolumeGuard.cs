@@ -15,6 +15,9 @@ sealed class VolumeGuard : IDisposable {
         public Endpoint(MMDevice device){Device=device;}
     }
     public bool Enabled {get;set;}
+    public int Corrections {get;private set;}
+    public DateTime? LastCorrection {get;private set;}
+    public string Description=>!Enabled?"Compensación desactivada: la rueda también cambia el volumen de Windows.":!IsOperational?"Compensación en espera de una salida de audio.":$"Compensación activa · {Corrections} correcciones esta sesión · última: {(LastCorrection.HasValue?LastCorrection.Value.ToString("HH:mm:ss"):"ninguna")}";
     public bool IsOperational=>Enabled&&endpoints.Count>0&&failure==null;
     public VolumeGuard(Action<string> log){this.log=log;}
     void Refresh() {
@@ -42,7 +45,7 @@ sealed class VolumeGuard : IDisposable {
                 float value=e.Device.AudioEndpointVolume.MasterVolumeLevelScalar;
                 if(now<=until&&restore.TryGetValue(id,out float baseline)) {
                     if(Math.Abs(value-baseline)>.0001f) {
-                        e.Device.AudioEndpointVolume.MasterVolumeLevelScalar=baseline;
+                        e.Device.AudioEndpointVolume.MasterVolumeLevelScalar=baseline;Corrections++;LastCorrection=DateTime.Now;
                         log($"Compensación: {e.Device.FriendlyName} {value:P0} → {baseline:P0}");
                     }
                 } else {
