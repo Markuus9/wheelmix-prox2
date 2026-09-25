@@ -1,6 +1,9 @@
 using System.Drawing.Drawing2D;
 namespace ControlAudioLogitech;
 static class Theme {
+    public static Label LabelKey(string key,float size=10,Color? color=null,FontStyle style=FontStyle.Regular)=>L.Bind(Label("",size,color,style),key);
+    public static Button ButtonKey(string key,Action action,bool primary=false)=>L.Bind(Button("",action,primary),key);
+    public static CheckBox CheckKey(string key,bool value)=>L.Bind(Check("",value),key);
     public static readonly Color Background = Color.FromArgb(15,18,26), Card = Color.FromArgb(24,28,39),
         Border = Color.FromArgb(43,49,65), Text = Color.FromArgb(241,243,250), Muted = Color.FromArgb(161,171,192),
         Accent = Color.FromArgb(158,139,255), Mint = Color.FromArgb(107,224,197);
@@ -19,7 +22,7 @@ static class Theme {
         ForeColor = Text, Font = new Font("Segoe UI",11), Margin = new Padding(0,8,0,8), Cursor = Cursors.Hand };
 }
 sealed class CardPanel : Panel {
-    public CardPanel() { DoubleBuffered = true; BackColor = Theme.Card; Padding = new Padding(22); }
+    public CardPanel() { DoubleBuffered = true; ResizeRedraw = true; BackColor = Theme.Card; Padding = new Padding(22); }
     protected override void OnPaint(PaintEventArgs e) {
         base.OnPaint(e);
         using var p = new Pen(Theme.Border);
@@ -32,11 +35,16 @@ sealed class MixSurface : Control {
     public double Step { get; set; } = .05;
     public event Action<double>? Requested;
     public MixSurface() {
-        DoubleBuffered = true; TabStop = true; Height = 170; Dock = DockStyle.Fill;
+        // Everything is drawn relative to Width: repaint fully on resize or stale copies remain.
+        DoubleBuffered = true; ResizeRedraw = true; TabStop = true; Height = 170; Dock = DockStyle.Fill;
         BackColor = Theme.Card; Cursor = Cursors.Hand;
-        AccessibleName = "Balance entre Game y Chat";
-        AccessibleDescription = "Flecha izquierda favorece Game, derecha Chat. Inicio vuelve al centro.";
+        AccessibleName = L.Text("mix.accessibleName");
+        AccessibleDescription = L.Text("mix.accessibleHint");
         AccessibleRole = AccessibleRole.Slider;
+        L.Changed+=RefreshLanguage;Disposed+=(_,_)=>L.Changed-=RefreshLanguage;
+    }
+    void RefreshLanguage() {
+        AccessibleName=L.Text("mix.accessibleName");AccessibleDescription=L.Text("mix.accessibleHint");Invalidate();
     }
     protected override bool IsInputKey(Keys keyData) => keyData is Keys.Left or Keys.Right or Keys.Home || base.IsInputKey(keyData);
     protected override void OnKeyDown(KeyEventArgs e) {
@@ -61,7 +69,7 @@ sealed class MixSurface : Control {
         TextRenderer.DrawText(g,chat,big,new Rectangle(Width*2/3,0,Width/3,(int)(50*scale)),Theme.Mint,TextFormatFlags.Right);
         TextRenderer.DrawText(g,"GAME",small,new Rectangle(0,(int)(49*scale),Width/3,(int)(24*scale)),Theme.Muted,TextFormatFlags.Left);
         TextRenderer.DrawText(g,"CHAT",small,new Rectangle(Width*2/3,(int)(49*scale),Width/3,(int)(24*scale)),Theme.Muted,TextFormatFlags.Right);
-        string caption = value == 0 ? "Equilibrado" : value < 0 ? "Prioridad Game" : "Prioridad Chat";
+        string caption = value == 0 ? L.Text("mix.center") : value < 0 ? L.Text("mix.game") : L.Text("mix.chat");
         TextRenderer.DrawText(g,caption,mid,new Rectangle(Width/3,(int)(17*scale),Width/3,(int)(40*scale)),Theme.Text,TextFormatFlags.HorizontalCenter);
         using var gradient = new LinearGradientBrush(new PointF(left,y),new PointF(right,y),Theme.Accent,Theme.Mint);
         using var track = new Pen(gradient,8*scale) { StartCap=LineCap.Round,EndCap=LineCap.Round };
@@ -73,7 +81,7 @@ sealed class MixSurface : Control {
         g.FillEllipse(fill,x-radius,y-radius,radius*2,radius*2);
         using var inner = new SolidBrush(Theme.Card);
         g.FillEllipse(inner,x-4*scale,y-4*scale,8*scale,8*scale);
-        TextRenderer.DrawText(g,"Gira la rueda de tus auriculares o arrastra el balance.",Font,
+        TextRenderer.DrawText(g,L.Text("mix.hint"),Font,
             new Rectangle(0,(int)(132*scale),Width,(int)(28*scale)),Theme.Muted,TextFormatFlags.HorizontalCenter);
         if(Focused) ControlPaint.DrawFocusRectangle(g,ClientRectangle,Theme.Accent,Theme.Card);
     }

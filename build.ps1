@@ -9,6 +9,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
 dotnet publish -c Release -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o $binaryDir
 if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 $exe = Join-Path $binaryDir 'WheelMix.exe'
+# Refresh loose translations before testing: they override the bundled ones at runtime.
+Remove-Item (Join-Path $binaryDir 'locales') -Recurse -Force -ErrorAction SilentlyContinue
+Copy-Item locales -Destination $binaryDir -Recurse -Force
 if (!$SkipTests) {
     $result = Start-Process -FilePath $exe -ArgumentList '--self-test' -WindowStyle Hidden -Wait -PassThru -RedirectStandardOutput (Join-Path $releaseDir 'tests.log') -RedirectStandardError (Join-Path $releaseDir 'tests-error.log')
     Get-Content (Join-Path $releaseDir 'tests.log')
@@ -23,7 +26,7 @@ Copy-Item (Join-Path $nuget "microsoft.netcore.app.runtime.win-x64\$runtime\THIR
 Copy-Item (Join-Path $nuget "microsoft.windowsdesktop.app.runtime.win-x64\$runtime\LICENSE") (Join-Path $binaryDir 'LICENSE-WINDOWSDESKTOP.txt') -Force
 $version = $project.Project.PropertyGroup.Version
 $zip = Join-Path $releaseDir "WheelMix-v$version-win-x64.zip"
-$items = 'WheelMix.exe','LICENSE','THIRD-PARTY-NAudio.txt','QUICKSTART.md','LICENSE-DOTNET.txt','THIRD-PARTY-DOTNET.txt','LICENSE-WINDOWSDESKTOP.txt' | ForEach-Object { Join-Path $binaryDir $_ }
+$items = 'locales','WheelMix.exe','LICENSE','THIRD-PARTY-NAudio.txt','QUICKSTART.md','LICENSE-DOTNET.txt','THIRD-PARTY-DOTNET.txt','LICENSE-WINDOWSDESKTOP.txt' | ForEach-Object { Join-Path $binaryDir $_ }
 Compress-Archive -LiteralPath $items -DestinationPath $zip -Force
 $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
 [IO.File]::WriteAllText($zip + '.sha256', $hash + '  ' + [IO.Path]::GetFileName($zip) + [Environment]::NewLine)

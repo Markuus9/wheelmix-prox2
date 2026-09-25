@@ -9,3 +9,7 @@ Use `--diagnose` for physical captures. Keep logs and user configuration out of 
 UI changes should include a screenshot and checks at common display scales. Audio changes need both unit/contract checks and the local silent-session test. Do not claim hardware or Sonar validation based on mocks.
 
 No network calls belong in the default Windows mixer. Sonar requests must stay on loopback.
+
+## Translations
+
+Languages live in `locales/` as plain JSON and need no code changes. See [locales/README.md](locales/README.md) for the format and checks. When you add a UI string, add its key to `en.json` and to every other language in the same change, and read it through `L.Text("key")` or bind it with `Theme.LabelKey`/`ButtonKey`/`CheckKey` so it follows language changes.

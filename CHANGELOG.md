@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+- Interface in 13 languages, switchable from Preferences › Language (Automatic follows Windows). Translations are plain JSON files in `locales/`; see `locales/README.md` to add one.
+- Closing the window keeps WheelMix running in the notification area; Exit from the tray icon closes it. A single click on the icon reopens the window.
+- Startup entry is now registered as "WheelMix" (legacy name migrated) and Preferences reports when Windows has it switched off in Startup apps; enabling it in WheelMix switches it back on.
+- Fixed stale drawing of the balance and cards when resizing or maximizing the window.
+
 ## 0.2.1
 - Direct PRO X 2 Centurion status query distinguishes the headset from its USB receiver and reports battery.
 - Dedicated help window, exercised through the actual Help button in a UI smoke test.

@@ -24,7 +24,9 @@ La descarga portátil incluye .NET. No necesita instalación, una cuenta, permis
 - Recuperar el volumen original con **Restablecer centro**.
 - Cambiar el paso, invertir la dirección y elegir tus aplicaciones de chat.
 - Pausar la mezcla y devolver la rueda a su función de volumen.
-- Minimizar a la bandeja e iniciar con Windows, si lo activas.
+- Cerrar con la X o minimizar sin detener la mezcla: WheelMix sigue en la bandeja (iconos ocultos). **Salir** desde su icono la cierra del todo.
+- Iniciar con Windows, si lo activas; aparece como WheelMix en Configuración › Aplicaciones › Inicio.
+- Usar la app en español, inglés, francés, portugués, alemán, italiano, catalán, neerlandés, polaco, ruso, japonés, chino simplificado o coreano (Preferencias › Idioma). Para aportar un idioma, consulta [locales/README.md](locales/README.md).
 - Abrir diagnósticos aparte cuando necesites resolver un problema.
 
 Discord, Discord PTB/Canary, Teams, TeamSpeak y Zoom están incluidos en la lista inicial de chat. El resto de sesiones de aplicaciones se consideran Game; los sonidos del sistema se omiten.

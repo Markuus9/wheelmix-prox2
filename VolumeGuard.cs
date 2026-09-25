@@ -17,7 +17,7 @@ sealed class VolumeGuard : IDisposable {
     public bool Enabled {get;set;}
     public int Corrections {get;private set;}
     public DateTime? LastCorrection {get;private set;}
-    public string Description=>!Enabled?"Compensación desactivada: la rueda también cambia el volumen de Windows.":!IsOperational?"Compensación en espera de una salida de audio.":$"Compensación activa · {Corrections} correcciones esta sesión · última: {(LastCorrection.HasValue?LastCorrection.Value.ToString("HH:mm:ss"):"ninguna")}";
+    public string Description=>!Enabled?L.Text("guard.disabled"):!IsOperational?L.Text("guard.waiting"):L.Text("guard.stats",Corrections,LastCorrection?.ToString("HH:mm:ss")??L.Text("common.none"));
     public bool IsOperational=>Enabled&&endpoints.Count>0&&failure==null;
     public VolumeGuard(Action<string> log){this.log=log;}
     void Refresh() {

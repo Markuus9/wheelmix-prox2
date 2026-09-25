@@ -30,6 +30,32 @@ static class Tests {
             rejected=false;try{ChatApplications.FromExecutable("setup.msi");}catch(ArgumentException){rejected=true;}
             Check(rejected,"rechazar archivos no ejecutables");
             Check(Startup.BuildCommand(@"C:\My Apps\WheelMix.exe")=="\"C:\\My Apps\\WheelMix.exe\" --tray","inicio automático entrecomilla rutas con espacios");
+            foreach(string code in L.Packs.Keys) {
+                var pack=L.Packs[code];
+                Check(L.Validate(pack).Count==0,"translation formats: "+code);
+                Check(L.Packs["en"].Strings.Keys.All(pack.Strings.ContainsKey),"translation coverage: "+code);
+            }
+            Check(Startup.IsDisabledApproval(new byte[]{3,0,0,0})&&!Startup.IsDisabledApproval(new byte[]{2,0,0,0})&&!Startup.IsDisabledApproval(null),"Windows startup toggle state");
+            L.SetLanguage("pt-PT");Check(L.Text("common.save")=="Guardar","regional language fallback");
+            L.SetLanguage("zz");Check(L.Current=="en","unknown language fallback");
+            Check(L.Validate(new LanguagePack {Strings=new(){{"guard.stats","{0}"}}}).Count==1,"reject missing placeholders");
+            Check(L.Validate(new LanguagePack {Strings=new(){{"bad.key","x"}}}).Count==1,"reject unknown keys");
+            Check(JsonSerializer.Deserialize<Settings>("{\"Step\":0.05}")!.Language=="auto","old settings migrate language");
+            Check(MainWindow.ShouldHideOnClose(CloseReason.UserClosing,false,false),"X hides");
+            Check(!MainWindow.ShouldHideOnClose(CloseReason.UserClosing,true,false),"Exit closes");
+            Check(!MainWindow.ShouldHideOnClose(CloseReason.WindowsShutDown,false,false),"Windows shutdown closes");
+            string testKey=@"Software\WheelMix.Tests."+Guid.NewGuid().ToString("N");
+            try {
+                using var key=Microsoft.Win32.Registry.CurrentUser.CreateSubKey(testKey);
+                var registration=new StartupRegistration(key);
+                var legacy=new StartupSnapshot(null,Startup.BuildCommand(@"C:\Old Path\WheelMix.exe"));
+                registration.Restore(legacy);
+                Check(registration.Capture()==legacy,"startup legacy snapshot");
+                registration.Set(Startup.BuildCommand(@"C:\New Path\WheelMix.exe"));
+                Check(registration.Capture()==new StartupSnapshot(Startup.BuildCommand(@"C:\New Path\WheelMix.exe"),null),"startup enable and remove legacy");
+                registration.Set(null);Check(registration.Capture()==new StartupSnapshot(null,null),"startup disable");
+                registration.Restore(legacy);Check(registration.Capture()==legacy,"startup rollback");
+            } finally {Microsoft.Win32.Registry.CurrentUser.DeleteSubKey(testKey,false);}
             Console.WriteLine($"{count} pruebas correctas."); return 0;
         } catch (Exception e) { Console.WriteLine(e); return 1; }
     }

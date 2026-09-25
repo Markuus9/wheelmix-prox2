@@ -11,13 +11,15 @@ sealed class MainWindow : Form {
     readonly StreamWriter logfile;
     readonly Queue<string> lines=new();
     readonly bool diagnostic,preview,startHidden;
-    readonly Label device=Theme.Label("Buscando auriculares",10,Theme.Muted);
-    readonly Label state=Theme.Label("Preparando el audio…",10,Theme.Muted);
-    readonly Label gameApps=Theme.Label("Reproduce audio en un juego o una aplicación.",10,Theme.Muted);
-    readonly Label chatApps=Theme.Label("Discord se detecta automáticamente al reproducir audio.",10,Theme.Muted);
+    readonly Label device=Theme.LabelKey("main.searching",10,Theme.Muted);
+    readonly Label state=Theme.LabelKey("main.preparing",10,Theme.Muted);
+    readonly Label gameApps=Theme.LabelKey("main.playGame",10,Theme.Muted);
+    readonly Label chatApps=Theme.LabelKey("main.playChat",10,Theme.Muted);
     readonly Label note=Theme.Label("",9,Theme.Muted);
     readonly MixSurface surface=new();
     readonly Button pause;
+    bool exitRequested,notified;
+    internal bool CloseToTray {get;set;}=true;
     bool busy,connected,paused,closing,readyToClose,editing,statusBusy;
     long nextStatus;
     HeadsetReading headset=new(HeadsetLink.Unknown);
@@ -31,7 +33,7 @@ sealed class MainWindow : Form {
     Form? diagnosticWindow;
     TextBox? diagnosticText;
     public MainWindow(bool diagnostic,bool startHidden,bool preview=false) {
-        this.diagnostic=diagnostic; this.startHidden=startHidden; this.preview=preview;
+        CloseToTray=!preview&&!diagnostic;this.diagnostic=diagnostic; this.startHidden=startHidden; this.preview=preview;
         Text="WheelMix"; Name="WheelMix";
         AutoScaleMode=AutoScaleMode.Dpi; ClientSize=new Size(900,700); MinimumSize=new Size(800,700);
         StartPosition=FormStartPosition.CenterScreen; BackColor=Theme.Background; ForeColor=Theme.Text; Font=new Font("Segoe UI",10);
@@ -49,54 +51,55 @@ sealed class MainWindow : Form {
         var header=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=2,Margin=new Padding(0) };
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,60)); header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,40));
         header.Controls.Add(Theme.Label("WheelMix",25,null,FontStyle.Bold),0,0);
-        var preferences=Theme.Button("Preferencias",OpenSettings); preferences.Anchor=AnchorStyles.Top|AnchorStyles.Right;
+        var preferences=Theme.ButtonKey("main.preferences",OpenSettings); preferences.Anchor=AnchorStyles.Top|AnchorStyles.Right;
         header.Controls.Add(preferences,1,0);
-        header.Controls.Add(Theme.Label("Tu juego y tu voz. En equilibrio.",10,Theme.Muted),0,1);
+        header.Controls.Add(Theme.LabelKey("main.tagline",10,Theme.Muted),0,1);
         device.Anchor=AnchorStyles.Right|AnchorStyles.Top; header.Controls.Add(device,1,1); root.Controls.Add(header,0,0);
         var hero=new CardPanel { Dock=DockStyle.Fill,Margin=new Padding(0,0,0,18) };
         var heroLayout=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=1,RowCount=3 };
         heroLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,30)); heroLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100)); heroLayout.RowStyles.Add(new RowStyle(SizeType.Absolute,40));
-        var heroHeading=Theme.Row(); heroHeading.Controls.Add(Theme.Label("BALANCE DE AUDIO",10,Theme.Muted,FontStyle.Bold));
+        var heroHeading=Theme.Row(); heroHeading.Controls.Add(Theme.LabelKey("main.balance",10,Theme.Muted,FontStyle.Bold));
         heroLayout.Controls.Add(heroHeading,0,0);
         surface.Step=config.Step; surface.Requested+=v=> { if(!paused&&!diagnostic&&!preview) {requested=v;pending=0;} };
         surface.Enabled=!diagnostic; heroLayout.Controls.Add(surface,0,1);
         var heroFooter=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=1 };
         heroFooter.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65)); heroFooter.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
         state.Anchor=AnchorStyles.Left|AnchorStyles.Top; heroFooter.Controls.Add(state,0,0);
-        var center=Theme.Button("Restablecer centro",()=> { requested=0;pending=0; },true); center.Anchor=AnchorStyles.Right|AnchorStyles.Top; center.Enabled=!diagnostic;
+        var center=Theme.ButtonKey("main.reset",()=> { requested=0;pending=0; },true); center.Anchor=AnchorStyles.Right|AnchorStyles.Top; center.Enabled=!diagnostic;
         heroFooter.Controls.Add(center,1,0); heroLayout.Controls.Add(heroFooter,0,2); hero.Controls.Add(heroLayout); root.Controls.Add(hero,0,1);
         var groups=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=new Padding(0) };
         groups.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50)); groups.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,50));
-        var game=Group("GAME","El resto de tu audio",gameApps,Theme.Accent);
-        var chat=Group("CHAT","Tus aplicaciones de voz",chatApps,Theme.Mint);
+        var game=Group("GAME","main.gameSubtitle",gameApps,Theme.Accent);
+        var chat=Group("CHAT","main.chatSubtitle",chatApps,Theme.Mint);
         game.Margin=new Padding(0,0,9,18);chat.Margin=new Padding(9,0,0,18);
         groups.Controls.Add(game,0,0);groups.Controls.Add(chat,1,0);root.Controls.Add(groups,0,2);
         var quick=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=new Padding(0) };
         quick.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,60));quick.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,40));
         var info=new FlowLayoutPanel { Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,Margin=new Padding(0) };
-        info.Controls.Add(Theme.Label("Tus volúmenes, tal como los dejaste.",11,null,FontStyle.Bold));
+        info.Controls.Add(Theme.LabelKey("main.volumes",11,null,FontStyle.Bold));
         note.MaximumSize=new Size(480,0);info.Controls.Add(note);quick.Controls.Add(info,0,0);
         var controls=Theme.Row(); controls.Anchor=AnchorStyles.Top|AnchorStyles.Right; controls.Dock=DockStyle.None;
-        pause=Theme.Button("Pausar",()=> { if(busy)return; paused=!paused;pause!.Text=paused?"Reanudar":"Pausar";if(paused){pending=0;requested=0;} guard.Enabled=!paused&&config.Compensate;UpdatePresentation(); });
+        pause=Theme.ButtonKey("main.pause",()=> { if(busy)return; paused=!paused;pause!.Text=paused?L.Text("main.resume"):L.Text("main.pause");if(paused){pending=0;requested=0;} guard.Enabled=!paused&&config.Compensate;UpdatePresentation(); });
         pause.Enabled=!diagnostic; controls.Controls.Add(pause);
-        var helpButton=Theme.Button("Ayuda",ShowHelp);helpButton.Name="helpButton";controls.Controls.Add(helpButton);quick.Controls.Add(controls,1,0);root.Controls.Add(quick,0,3);
+        var helpButton=Theme.ButtonKey("main.help",ShowHelp);helpButton.Name="helpButton";controls.Controls.Add(helpButton);quick.Controls.Add(controls,1,0);root.Controls.Add(quick,0,3);
         var bottom=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=new Padding(0) };
         bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,65));bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,35));
-        bottom.Controls.Add(Theme.Label("PRO X 2 LIGHTSPEED  /  Windows  /  v0.2.1",9,Theme.Muted),0,0);
-        var logs=new LinkLabel { Text="Diagnóstico",AutoSize=true,LinkColor=Theme.Muted,ActiveLinkColor=Theme.Accent,Anchor=AnchorStyles.Top|AnchorStyles.Right };
-        logs.LinkClicked+=(_,_)=>ShowDiagnostics();bottom.Controls.Add(logs,1,0);root.Controls.Add(bottom,0,4);
+        bottom.Controls.Add(Theme.Label("PRO X 2 LIGHTSPEED  /  Windows  /  v0.3.0",9,Theme.Muted),0,0);
+        var logs=new LinkLabel { Text=L.Text("main.diagnostics"),AutoSize=true,LinkColor=Theme.Muted,ActiveLinkColor=Theme.Accent,Anchor=AnchorStyles.Top|AnchorStyles.Right };
+        L.Bind(logs,"main.diagnostics");logs.LinkClicked+=(_,_)=>ShowDiagnostics();bottom.Controls.Add(logs,1,0);root.Controls.Add(bottom,0,4);
         Controls.Add(root);
         tray=new NotifyIcon { Icon=Icon,Text="WheelMix · Game + Chat",Visible=!preview };
-        var menu=new ContextMenuStrip();menu.Items.Add("Abrir WheelMix",null,(_,_)=>Restore());
-        menu.Items.Add("Restablecer centro",null,(_,_)=> {requested=0;pending=0;});
-        menu.Items.Add("Salir",null,(_,_)=>Close());tray.ContextMenuStrip=menu;tray.DoubleClick+=(_,_)=>Restore();
-        Resize+=(_,_)=> {if(WindowState==FormWindowState.Minimized)Hide();};
+        var menu=new ContextMenuStrip();menu.Items.Add(L.Text("tray.open"),null,(_,_)=>Restore());
+        menu.Items.Add(L.Text("main.reset"),null,(_,_)=> {requested=0;pending=0;});
+        menu.Items.Add(L.Text("tray.exit"),null,(_,_)=>RequestExit());tray.ContextMenuStrip=menu;
+        tray.MouseClick+=(_,e)=> {if(e.Button==MouseButtons.Left)Restore();};
+        Resize+=(_,_)=> {if(WindowState==FormWindowState.Minimized)HideToTray();};
         Load+=(_,_)=> {
-            if(preview) { connected=true; device.Text="●  Auricular activo · 44%";device.ForeColor=Theme.Mint;gameApps.Text="Spotify  ·  Chrome";chatApps.Text="Discord";UpdatePresentation();return; }
+            if(preview) { connected=true; device.Text=L.Text("headset.on")+" · 44%";device.ForeColor=Theme.Mint;gameApps.Text="Spotify  ·  Chrome";chatApps.Text="Discord";UpdatePresentation();return; }
             try {raw=new RawInput(Log,OnWheel,guard.Cancel);}
             catch(Exception e) {Log("HID: "+e.Message);}
             guard.Enabled=!diagnostic&&config.Compensate; Log(diagnostic?"Modo diagnóstico: solo lectura.":"WheelMix iniciado · "+config.Backend);
-            timer.Start();if(diagnostic)ShowDiagnostics();if(startHidden)BeginInvoke(()=>Hide());
+            timer.Start();if(diagnostic)ShowDiagnostics();if(startHidden)BeginInvoke(()=>HideToTray());
         };
         timer.Tick+=async(_,_)=> {
             if(closing)return;
@@ -107,15 +110,20 @@ sealed class MainWindow : Form {
         };
         FormClosing+=async(_,e)=> {
             if(readyToClose)return;
+            if(ShouldHideOnClose(e.CloseReason,exitRequested,!CloseToTray)) {
+                e.Cancel=true;HideToTray();
+                if(!notified){notified=true;tray.ShowBalloonTip(2500,"WheelMix",L.Text("tray.hidden"),ToolTipIcon.Info);}
+                return;
+            }
             closing=true;timer.Stop();statusCancellation.Cancel();
             if(busy) {e.Cancel=true;while(busy)await Task.Delay(25);readyToClose=true;Close();}
         };
-        FormClosed+=(_,_)=> {timer.Dispose();raw?.Dispose();guard.Dispose();mixer?.Dispose();tray.Dispose();diagnosticWindow?.Close();helpWindow?.Close();logfile.Dispose();statusCancellation.Dispose();};
-        UpdatePresentation();
+        FormClosed+=(_,_)=> {L.Changed-=LanguageChanged;timer.Dispose();raw?.Dispose();guard.Dispose();mixer?.Dispose();tray.Dispose();diagnosticWindow?.Close();helpWindow?.Close();logfile.Dispose();statusCancellation.Dispose();};
+        L.Changed+=LanguageChanged;UpdatePresentation();
     }
     CardPanel Group(string title,string subtitle,Label apps,Color color) {
         var p=new CardPanel {Dock=DockStyle.Fill};var stack=new FlowLayoutPanel {Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false};
-        stack.Controls.Add(Theme.Label(title,10,color,FontStyle.Bold));stack.Controls.Add(Theme.Label(subtitle,11,null,FontStyle.Bold));
+        stack.Controls.Add(Theme.Label(title,10,color,FontStyle.Bold));stack.Controls.Add(Theme.LabelKey(subtitle,11,null,FontStyle.Bold));
         apps.AutoEllipsis=true;apps.AutoSize=false;apps.Height=45;apps.Width=320;stack.Controls.Add(apps);
         p.Resize+=(_,_)=>apps.Width=Math.Max(50,p.ClientSize.Width-p.Padding.Horizontal);
         p.Controls.Add(stack);return p;
@@ -125,17 +133,17 @@ sealed class MainWindow : Form {
         surface.Value=current;
         if(compensationStatus is {IsDisposed:false})compensationStatus.Text=guard.Description;
         if(!preview) {bool found=(raw?.TargetCount??0)>0;
-            device.Text=!found?"○  Receptor desconectado":headset.Link==HeadsetLink.Connected?$"●  Auricular activo{(headset.Battery.HasValue?$" · {headset.Battery}%":"")}":headset.Link==HeadsetLink.Disconnected?"○  Auricular apagado":"○  Receptor presente · sin confirmar";
+            device.Text=!found?L.Text("headset.receiverOff"):headset.Link==HeadsetLink.Connected?L.Text("headset.on")+(headset.Battery.HasValue?$" · {headset.Battery}%":""):headset.Link==HeadsetLink.Disconnected?L.Text("headset.off"):L.Text("headset.unknown");
             device.ForeColor=found&&headset.Link==HeadsetLink.Connected?Theme.Mint:Theme.Muted;}
-        if(diagnostic)state.Text="Solo diagnóstico · no modifica el audio";
-        else if(paused)state.Text="En pausa · rueda de volumen normal";
-        else if(connected)state.Text="Listo para mezclar";
-        else state.Text=config.Backend=="Sonar"?"Abre GG y activa Sonar":"Preparando el audio de Windows…";
-        note.Text="Centro conserva el volumen original. "+(guard.IsOperational||preview?"Volumen general: compensación activa.":guard.Enabled?"Compensación en espera de una salida de audio.":"Volumen general: control normal de Windows.");
+        if(diagnostic)state.Text=L.Text("main.readOnly");
+        else if(paused)state.Text=L.Text("main.paused");
+        else if(connected)state.Text=L.Text("main.ready");
+        else state.Text=config.Backend=="Sonar"?L.Text("main.openSonar"):L.Text("main.preparingWindows");
+        note.Text=L.Text("main.centerHint")+(guard.IsOperational||preview?L.Text("guard.active"):guard.Enabled?L.Text("guard.waiting"):L.Text("guard.normal"));
         if(mixer is WindowsMixer native) {
-            chatApps.Text=native.ChatNames.Count==0?"Esperando audio de Discord o tus apps de chat…":string.Join("  ·  ",native.ChatNames);
-            gameApps.Text=native.GameNames.Count==0?"Abre un juego o reproduce música.":string.Join("  ·  ",native.GameNames);
-        } else if(config.Backend=="Sonar") {chatApps.Text="Canal Sonar Chat";gameApps.Text="Canal Sonar Gaming";}
+            chatApps.Text=native.ChatNames.Count==0?L.Text("main.waitChat"):string.Join("  ·  ",native.ChatNames);
+            gameApps.Text=native.GameNames.Count==0?L.Text("main.waitGame"):string.Join("  ·  ",native.GameNames);
+        } else if(config.Backend=="Sonar") {chatApps.Text=L.Text("main.sonarChat");gameApps.Text=L.Text("main.sonarGame");}
     }
     void OnWheel(int direction) {
         if(closing||paused||diagnostic||editing)return;
@@ -178,10 +186,10 @@ sealed class MainWindow : Form {
             using var dialog=new SettingsDialog(config,running);
             if(dialog.ShowDialog(this)!=DialogResult.OK||dialog.Value==null)return;
             var updated=dialog.Value;Preferences.Save(updated,dialog.RequestedStartup);
-            mixer?.Dispose();config=updated;mixer=preview?null:CreateMixer();
+            mixer?.Dispose();config=updated;L.SetLanguage(config.Language);mixer=preview?null:CreateMixer();
             pending=0;requested=null;current=0;nextPoll=0;connected=false;surface.Step=config.Step;
             Log("Preferencias guardadas. "+Startup.Status);UpdatePresentation();
-        }catch(Exception e){MessageBox.Show(this,e.Message,"No se pudieron guardar los ajustes");}
+        }catch(Exception e){MessageBox.Show(this,e.Message,L.Text("error.save"));}
         finally{editing=false;guard.Enabled=!preview&&!paused&&config.Compensate;}
     }
     void ShowHelp() {
@@ -195,11 +203,11 @@ sealed class MainWindow : Form {
     }
     void ShowDiagnostics() {
         if(diagnosticWindow is {IsDisposed:false}) {diagnosticWindow.Activate();return;}
-        diagnosticWindow=new Form {Text="Diagnóstico · WheelMix",Size=new Size(900,530),BackColor=Theme.Background,ForeColor=Theme.Text,StartPosition=FormStartPosition.CenterParent};
+        diagnosticWindow=new Form {Text=L.Text("diagnostics.title"),Size=new Size(900,530),BackColor=Theme.Background,ForeColor=Theme.Text,StartPosition=FormStartPosition.CenterParent};
         diagnosticText=new TextBox {Dock=DockStyle.Fill,Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Both,WordWrap=false,BackColor=Theme.Card,ForeColor=Theme.Muted,Font=new Font("Consolas",9),Text=string.Join(Environment.NewLine,lines)};
         var footer=new FlowLayoutPanel {Dock=DockStyle.Bottom,Height=56,Padding=new Padding(10)};
-        footer.Controls.Add(Theme.Button("Abrir registros",()=>Process.Start(new ProcessStartInfo(Program.DataDir){UseShellExecute=true})));
-        footer.Controls.Add(Theme.Button("Detectar de nuevo",()=> {raw?.Enumerate();nextPoll=0;}));
+        footer.Controls.Add(Theme.ButtonKey("diagnostics.logs",()=>Process.Start(new ProcessStartInfo(Program.DataDir){UseShellExecute=true})));
+        footer.Controls.Add(Theme.ButtonKey("diagnostics.detect",()=> {raw?.Enumerate();nextPoll=0;}));
         compensationStatus=Theme.Label(guard.Description,10,Theme.Muted);compensationStatus.Dock=DockStyle.Top;compensationStatus.AutoSize=false;compensationStatus.Height=48;
         diagnosticWindow.Controls.Add(diagnosticText);diagnosticWindow.Controls.Add(compensationStatus);diagnosticWindow.Controls.Add(footer);diagnosticWindow.Show(this);
     }
@@ -211,8 +219,31 @@ sealed class MainWindow : Form {
         lines.Enqueue(line);while(lines.Count>400)lines.Dequeue();
         if(diagnosticText is {IsDisposed:false}) {if(diagnosticText.TextLength>60000)diagnosticText.Clear();diagnosticText.AppendText(line+Environment.NewLine);}
     }
-    void Restore(){Show();WindowState=FormWindowState.Normal;Activate();}
+    internal void TestTrayLifecycle() {
+        CloseToTray=true;notified=true;
+        Close();
+        if(IsDisposed||Visible||ShowInTaskbar)throw new Exception("X did not hide the live window.");
+        tray.ContextMenuStrip!.Items[0].PerformClick();
+        if(!Visible||!ShowInTaskbar)throw new Exception("Tray Open did not restore the window.");
+        L.SetLanguage("fr");
+        if(tray.ContextMenuStrip.Items[2].Text!="Quitter")throw new Exception("Tray language did not update.");
+        tray.ContextMenuStrip.Items[2].PerformClick();
+        if(!IsDisposed)throw new Exception("Tray Exit did not dispose the application.");
+    }
+    internal static bool ShouldHideOnClose(CloseReason reason,bool exitRequested,bool temporaryMode)=>reason==CloseReason.UserClosing&&!exitRequested&&!temporaryMode;
+    internal void RequestExit(){exitRequested=true;Close();}
+    void HideToTray(){Hide();ShowInTaskbar=false;}
+    void LanguageChanged() {
+        tray.ContextMenuStrip!.Items[0].Text=L.Text("tray.open");
+        tray.ContextMenuStrip.Items[1].Text=L.Text("main.reset");
+        tray.ContextMenuStrip.Items[2].Text=L.Text("tray.exit");
+        pause.Text=L.Text(paused?"main.resume":"main.pause");
+        helpWindow?.Close();diagnosticWindow?.Close();
+        UpdatePresentation();
+    }
+    void Restore(){ShowInTaskbar=true;Show();if(WindowState==FormWindowState.Minimized)WindowState=FormWindowState.Normal;Activate();}
     protected override void WndProc(ref Message m) {
+        if(m.Msg==Program.ExitMessage){RequestExit();return;}
         if(m.Msg==Program.ActivateMessage){Restore();return;}base.WndProc(ref m);
     }
     protected override void OnHandleCreated(EventArgs e) {
