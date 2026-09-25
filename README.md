@@ -1,117 +1,83 @@
-# WheelMix
+<p align="center"><img src="assets/wheelmix.png" width="96" alt="WheelMix logo"></p>
 
-**Tu juego y tu voz. En equilibrio.**
+<h1 align="center">WheelMix</h1>
 
-Convierte la rueda de tus Logitech PRO X 2 LIGHTSPEED en un control de balance entre Discord y el resto del audio. Funciona con el mezclador de Windows, sin SteelSeries y sin instalar controladores.
+<p align="center"><b>Your game and your voice. In balance.</b><br>
+Turn the volume wheel of your Logitech PRO X 2 LIGHTSPEED into a Game / Chat mixer on Windows.</p>
 
-![Interfaz de WheelMix](docs/interface.png)
+<p align="center">
+  <a href="https://github.com/Markuus9/wheelmix-prox2/releases/latest"><img src="https://img.shields.io/github/v/release/Markuus9/wheelmix-prox2?label=download&color=9e8bff" alt="Latest release"></a>
+  <a href="https://github.com/Markuus9/wheelmix-prox2/actions/workflows/build.yml"><img src="https://github.com/Markuus9/wheelmix-prox2/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011%20x64-0078d4" alt="Windows 10 | 11 x64">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Markuus9/wheelmix-prox2" alt="MIT license"></a>
+</p>
 
-*Vista de la interfaz con aplicaciones de ejemplo. UI actualmente en español.*
+<p align="center"><a href="README.es.md">Leer en español</a></p>
 
-## Descargar y usar
+![WheelMix main window](docs/interface.png)
 
-1. En la sección **Releases** del repositorio, descarga `WheelMix-v0.2.1-win-x64.zip` cuando esté publicado.
-2. Extrae el ZIP y ejecuta **WheelMix.exe**.
-3. Conecta el receptor USB de los PRO X 2 y abre Discord y tu juego.
-4. Gira la rueda para dar prioridad al chat o al juego.
+WheelMix balances Discord (or any voice app) against the rest of your audio using the Windows mixer. No SteelSeries GG, no virtual audio devices, no drivers.
 
-La descarga portátil incluye .NET. No necesita instalación, una cuenta, permisos de administrador ni SteelSeries. El proyecto está preparado para publicar; no presupone que ya exista una release pública.
+## Download
 
-## Lo que puedes hacer
+1. Go to [**Releases**](https://github.com/Markuus9/wheelmix-prox2/releases/latest) and download `WheelMix-vX.Y.Z-win-x64.zip`.
+2. Extract the ZIP to a folder you will keep (for example `Documents\WheelMix`).
+3. Run **WheelMix.exe**. It is portable: .NET is included and nothing is installed.
+4. Plug in the PRO X 2 USB receiver, open Discord and a game, and turn the wheel.
 
-- Mezclar Game y Chat con la rueda o con el balance de la pantalla.
-- Ver las aplicaciones de voz y el resto del audio por separado.
-- Recuperar el volumen original con **Restablecer centro**.
-- Cambiar el paso, invertir la dirección y elegir tus aplicaciones de chat.
-- Pausar la mezcla y devolver la rueda a su función de volumen.
-- Cerrar con la X o minimizar sin detener la mezcla: WheelMix sigue en la bandeja (iconos ocultos). **Salir** desde su icono la cierra del todo.
-- Iniciar con Windows, si lo activas; aparece como WheelMix en Configuración › Aplicaciones › Inicio.
-- Usar la app en español, inglés, francés, portugués, alemán, italiano, catalán, neerlandés, polaco, ruso, japonés, chino simplificado o coreano (Preferencias › Idioma). Para aportar un idioma, consulta [locales/README.md](locales/README.md).
-- Abrir diagnósticos aparte cuando necesites resolver un problema.
+> The executable is not code-signed yet, so Windows SmartScreen may warn the first time. Choose **More info › Run anyway**. You can check the download against the `.sha256` file published with each release.
 
-Discord, Discord PTB/Canary, Teams, TeamSpeak y Zoom están incluidos en la lista inicial de chat. El resto de sesiones de aplicaciones se consideran Game; los sonidos del sistema se omiten.
+## Features
 
-## Cómo funciona
+- **Wheel mixing**: up favors Chat, down favors Game. Or drag the balance on screen.
+- **Center keeps your volumes**: the balance is relative to each app's own level, so a 40 % Spotify stays at 40 %.
+- **Runs in the background**: closing the window keeps WheelMix in the notification area (hidden icons). Choose **Exit** from its icon to quit.
+- **Starts with Windows** if you enable it in Preferences. It appears as *WheelMix* in Settings › Apps › Startup.
+- **Your chat apps**: Discord, Teams, TeamSpeak and Zoom are preset; add any `.exe`.
+- **Headset status and battery**, pause, reverse direction and step size.
+- **13 languages**: English, Español, Català, Deutsch, Français, Italiano, Nederlands, Polski, Português, Русский, 日本語, 한국어, 简体中文. [Add yours](locales/README.md).
 
-WheelMix identifica los informes HID del receptor `046D:0AF7`, colección Consumer Control `000C:0001`. No intercepta globalmente las teclas del teclado.
+## How it works
 
-En modo Windows regula el volumen de las sesiones de las aplicaciones en sus salidas actuales. **No crea dos dispositivos virtuales.**
+WheelMix reads the HID reports of the receiver `046D:0AF7` (Consumer Control `000C:0001`) only, never global keyboard keys. It then scales the volume of each Windows audio session:
 
 | Balance | Game | Chat |
 |---|---:|---:|
-| Todo Game | 100 % | 0 % |
-| Centro | 100 % | 100 % |
-| Todo Chat | 0 % | 100 % |
+| Full Game | 100 % | 0 % |
+| Center | 100 % | 100 % |
+| Full Chat | 0 % | 100 % |
 
-Los porcentajes son relativos al volumen original de cada aplicación. Si Spotify estaba al 40 %, el centro lo conserva al 40 %.
+The wheel also sends a volume command to Windows. **Compensate system volume** (on by default) undoes it after each tick. It is best effort: a brief jump or the Windows volume flyout may appear.
 
-## Compatibilidad y límites
+## Compatibility and limits
 
-- Windows 10/11 x64 y Logitech PRO X 2 LIGHTSPEED mediante receptor USB.
-- Bluetooth, conexión analógica y otros auriculares no se han validado.
-- El control por aplicación necesita audio compartido de Windows; el modo exclusivo no está cubierto.
-- Las pestañas de navegador que comparten proceso no pueden separarse por contenido. Es preferible Discord de escritorio.
-- La compensación **Compensar el volumen general al girar** está activa por defecto en instalaciones nuevas. Restaura el volumen después del giro; puede haber un salto breve, aparecer el indicador de Windows o interferir con cambios simultáneos. Es una compensación de mejor esfuerzo, no un bloqueo HID. Se puede desactivar.
-- Al cerrar normalmente se restauran los niveles de las sesiones. Un cierre forzado puede dejar niveles atenuados: recupéralos en el mezclador de Windows.
-- La versión no está firmada digitalmente. No se garantiza que Windows SmartScreen la reconozca.
-- La integración opcional de Sonar sigue disponible en Preferencias. Usa una API comunitaria no oficial; no se validó contra un servicio Sonar operativo en este equipo.
+- Windows 10/11 x64 with the Logitech PRO X 2 LIGHTSPEED on its USB receiver. Bluetooth, analog and other headsets are not validated.
+- Needs shared-mode audio; browser tabs share one process and cannot be split. Prefer desktop Discord.
+- Normal exit restores session volumes. A forced kill can leave apps attenuated; fix them in the Windows volume mixer.
+- Optional SteelSeries Sonar backend uses an unofficial local API and has not been validated against a running Sonar.
 
-No está afiliado a Logitech ni a SteelSeries.
+Not affiliated with Logitech or SteelSeries.
 
-## Compilar
+## Privacy and uninstall
 
-Necesitas Windows x64 y un SDK .NET 8 compatible con `global.json`. El proyecto fija el runtime de distribución y sus dependencias.
+No telemetry, no auto-update, no network access in the default Windows mode (Sonar talks to localhost only). Settings and logs live in `%LOCALAPPDATA%\ControlAudioLogitech\`.
+
+To uninstall, untick *Open WheelMix when I sign in* in Preferences, exit from the tray icon and delete the folder (and optionally the settings folder).
+
+## Building from source
+
+Requires Windows x64 and the .NET 8 SDK (see `global.json`).
 
 ```powershell
 ./build.ps1
 ```
 
-El script restaura con el archivo de bloqueo, publica el ejecutable autónomo, ejecuta las pruebas de lógica y API simulada y genera:
+It restores with the lock file, publishes a self-contained single-file `WheelMix.exe`, runs the self-tests and writes `release/WheelMix-vX.Y.Z-win-x64.zip` plus its `.sha256`. See [Testing](docs/TESTING.md) and [Releasing](docs/RELEASING.md).
 
-- `release/WheelMix-win-x64/WheelMix.exe`
-- `release/WheelMix-v0.2.1-win-x64.zip`
-- Su archivo `.sha256`.
+## Contributing
 
-No distribuyas `bin/`, logs ni el ZIP antiguo del prototipo. El paquete para usuarios es el ZIP generado dentro de `release/`.
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md). Translations are plain JSON files; see [locales/README.md](locales/README.md).
 
-## Pruebas
+## License
 
-El build ejecuta las 22 comprobaciones de lógica y contratos HTTP. También hay una prueba local de audio real:
-
-```powershell
-Start-Process ./release/WheelMix-win-x64/WheelMix.exe -ArgumentList '--test-windows' -Wait
-```
-
-Cierra WheelMix antes de ejecutarla. Crea una sesión silenciosa y solo cambia el volumen de su propio proceso. Comprueba silencio, 50 % y restauración.
-
-Más pruebas y criterios manuales en [Testing](docs/TESTING.md). El flujo CI compila y prueba sin requerir auriculares. No sustituye las pruebas físicas.
-
-## Publicar en GitHub
-
-Sube el código fuente, los assets y `.github/`. El flujo incluido genera el ZIP y su hash como artefactos en cada push, PR o ejecución manual. **No publica releases automáticamente.**
-
-Para una release: comprueba los criterios de [publicación](docs/RELEASING.md), crea una etiqueta y adjunta el ZIP y su hash a la release correspondiente. No hay credenciales ni nombres de cuenta preconfigurados.
-
-## Datos y desinstalación
-
-Configuración y registros: `%LOCALAPPDATA%/ControlAudioLogitech/`. No hay telemetría ni actualización automática. El modo Windows no hace conexiones de red; Sonar solo se conecta al equipo local. Los logs incluyen procesos y rutas HID: revísalos antes de compartirlos.
-
-Para quitar la app, desactiva **Iniciar al entrar en Windows**, cierra WheelMix y elimina su carpeta. Puedes borrar también la carpeta local de configuración. La interfaz ayuda a mantener la entrada de inicio, pero mover el ejecutable requiere desactivar y volver a activar esa opción.
-
-Código bajo licencia [MIT](LICENSE). NAudio y los componentes .NET conservan sus propias licencias, incluidas en la descarga.
-
-## English
-
-WheelMix turns the Logitech PRO X 2 LIGHTSPEED headset wheel into a game/voice balance control using Windows audio sessions. Download the portable Windows x64 ZIP, extract it, and run WheelMix.exe. It bundles .NET and does not require SteelSeries or virtual audio drivers.
-
-The interface is currently Spanish. See [Quick start](QUICKSTART.md) for the English control guide. System-volume compensation is best effort, not a guaranteed input block. This release is unsigned.
-
-## Estado del auricular y preferencias (0.2.1)
-
-El receptor conectado no prueba que el auricular esté encendido. WheelMix consulta el canal de estado Centurion aproximadamente cada dos segundos: activo y batería, apagado o estado sin confirmar. No interpreta un timeout como apagado. Referencia del protocolo: [PROX2-AutoSwitch](https://github.com/Ayerdi/PROX2-AutoSwitch/blob/main/lib/LogitechProX2Centurion.psm1).
-
-En Aplicaciones de chat, marcada significa Chat y desmarcada Game. **Elegir archivo .exe** añade el nombre del proceso sin ejecutar el archivo. Se compara el nombre, no la ruta, para tolerar cambios de carpeta tras actualizaciones. Dos ejecutables con el mismo nombre se agrupan; no selecciones instaladores ni Update.exe.
-
-Inicio con Windows se guarda en HKCU/Software/Microsoft/Windows/CurrentVersion/Run/ControlAudioLogitech como la ruta entre comillas seguida de --tray. Solo se modifica al guardar: activar registra la copia actual; desactivar elimina la entrada. Cancelar no cambia nada. Preferencias muestra su registro y enlaza a Aplicaciones de inicio de Windows para comprobar si el sistema lo ha deshabilitado.
-
-Diagnóstico muestra si la compensación está activa y cuántas correcciones ha hecho en esta sesión. Tenerla activa sin correcciones no prueba un fallo: puede que el volumen general no haya cambiado. La compensación sigue siendo de mejor esfuerzo.
+[MIT](LICENSE). NAudio and .NET components keep their own licenses, included in every download. Headset status protocol reference: [PROX2-AutoSwitch](https://github.com/Ayerdi/PROX2-AutoSwitch).

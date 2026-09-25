@@ -1,4 +1,4 @@
-name: Build Windows release
+name: Build and release
 on:
   push:
     branches: [main, master]
@@ -15,6 +15,13 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: '8.0.x'
+      - name: Check tag matches project version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content ControlAudioLogitech.csproj
+          $version = $project.Project.PropertyGroup.Version
+          if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "Tag $env:GITHUB_REF_NAME does not match project version $version." }
       - name: Build, test and package
         shell: pwsh
         run: ./build.ps1
@@ -26,3 +33,27 @@ jobs:
             release/*.zip
             release/*.sha256
           if-no-files-found: error
+
+  # Publishes the tested package from the job above; only tags get write access.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: WheelMix-win-x64
+          path: dist
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          # Release notes are the matching CHANGELOG section.
+          awk -v heading="## $version" '$0==heading{found=1;next} /^## /{if(found)exit} found' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "CHANGELOG.md has no section for $version"; exit 1; }
+          printf '\n**Download** `WheelMix-%s-win-x64.zip`, extract it and run `WheelMix.exe`. No installation or .NET needed. Verify with the `.sha256` file.\n' "$GITHUB_REF_NAME" >> notes.md
+          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.sha256 --title "WheelMix $GITHUB_REF_NAME" --notes-file notes.md --verify-tag

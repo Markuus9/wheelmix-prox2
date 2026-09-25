@@ -1,13 +1,18 @@
 # Release checklist
 
-1. Set Version in the project and update the displayed UI version and changelog together.
-2. Review the pinned .NET runtime security patch and package lock.
-3. Run build.ps1 and the checks in TESTING.md.
-4. Review screenshots and the README. Do not describe volume compensation as perfect suppression.
-5. Publish the repository without work/, bin/, obj/, app/, release/, local logs or settings. A source ZIP is not a runnable download.
-6. Run the GitHub build workflow and download its artifact.
-7. Create a release for the matching tag; attach the portable ZIP and .sha256.
-8. State tested headset/connection and known limitations. Do not imply Sonar was tested if only contracts ran.
-9. If signing is available, sign the executable before packaging, regenerate the ZIP and hash, and verify the signature. No certificate is bundled with this project.
+Releases are published by GitHub Actions when a `v*` tag is pushed. The workflow builds, runs the self-tests, and attaches the portable ZIP and its `.sha256` to a GitHub release. The release notes come from the matching `CHANGELOG.md` section.
 
-The workflow builds artifacts only. No remote repository, release or signing certificate is created by the local build.
+1. Set `Version` in `ControlAudioLogitech.csproj` and update the version shown in `MainWindow.cs`. The workflow refuses a tag that does not match the project version.
+2. Add a `## X.Y.Z` section to `CHANGELOG.md`.
+3. Review the pinned .NET runtime security patch and package lock.
+4. Run `./build.ps1` and the checks in [TESTING.md](TESTING.md). Review screenshots and the README. Do not describe volume compensation as perfect suppression.
+5. Commit, then tag and push:
+
+   ```powershell
+   git tag vX.Y.Z
+   git push origin main vX.Y.Z
+   ```
+
+6. When the workflow finishes, check the release page: ZIP, `.sha256`, notes. State the tested headset/connection and known limitations. Do not imply Sonar was tested if only contracts ran.
+
+If signing becomes available, sign the executable before packaging, regenerate the ZIP and hash, and verify the signature. No certificate is bundled with this project.
